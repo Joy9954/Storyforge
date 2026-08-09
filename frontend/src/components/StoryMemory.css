@@ -1,0 +1,102 @@
+.story-memory {
+  background: white;
+  border-radius: 10px;
+  padding: 2rem;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.story-memory h2 {
+  margin: 0 0 0.5rem 0;
+  color: #667eea;
+}
+
+.description {
+  color: #666;
+  margin: 0 0 2rem 0;
+  font-size: 0.95rem;
+}
+
+.memory-sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+.section {
+  background: #f9f9f9;
+  padding: 1.5rem;
+  border-radius: 5px;
+  border: 1px solid #e0e0e0;
+}
+
+.section h3 {
+  margin: 0 0 1rem 0;
+  color: #333;
+  font-size: 1.1rem;
+}
+
+.character-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.character-form input {
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 3px;
+  font-size: 0.95rem;
+}
+
+.character-form input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 5px rgba(102, 126, 234, 0.1);
+}
+
+.character-form button {
+  padding: 0.75rem;
+  background: #667eea;
+  color: white;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.3s ease;
+}
+
+.character-form button:hover {
+  background: #764ba2;
+}
+
+.characters-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.character-card {
+  background: white;
+  padding: 1rem;
+  border-radius: 3px;
+  border-left: 3px solid #667eea;
+}
+
+.character-card h4 {
+  margin: 0 0 0.5rem 0;
+  color: #667eea;
+}
+
+.character-card p {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.empty,
+.placeholder {
+  color: #999;
+  font-style: italic;
+  margin: 1rem 0;
+}
