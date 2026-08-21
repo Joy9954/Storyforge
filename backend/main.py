@@ -1,9 +1,10 @@
-"""Storyforge backend: FastAPI service that analyzes manuscript text with Google Gemini.
+"""Storyforge backend: FastAPI service that analyzes manuscript text with an AI provider.
 
 POST /api/v1/editor/analyze
-  Body: {"text": "<non-empty string>", "task": "<one of 7 tasks>", "context": {"genre"?, "sceneTitle"?, "storyBible"?}}
-  Calls Gemini (gemini-3.6-flash, OpenAI-compatible endpoint) with a schema-strict
-  prompt, then validates the returned JSON array and returns structured suggestions.
+  Body: {"text": "<non-empty string>", "task": "<one of 7 tasks>", "provider": "gemini"|"groq", "context": {"genre"?, "sceneTitle"?, "storyBible"?}}
+  Calls the selected provider (Gemini gemini-3.6-flash or Groq llama-3.3-70b-versatile,
+  both via OpenAI-compatible endpoints) with a schema-strict prompt, then validates the
+  returned JSON array and returns structured suggestions.
   Original text is never modified — suggestions are advisory only.
 """
 import asyncio
@@ -18,8 +19,21 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-GEMINI_MODEL = "gemini-3.6-flash"
-GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions"
+# Each provider shares the same OpenAI-compatible request shape, JSON schema
+# instruction, and extract_json/validate pipeline below. A provider only differs
+# by its own env key and endpoint/model.
+PROVIDERS = {
+    "gemini": {
+        "key_env": "GEMINI_API_KEY",
+        "model": "gemini-3.6-flash",
+        "endpoint": "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+    },
+    "groq": {
+        "key_env": "GROQ_API_KEY",
+        "model": "llama-3.3-70b-versatile",
+        "endpoint": "https://api.groq.com/openai/v1/chat/completions",
+    },
+}
 
 ANALYSIS_TASKS = [
     "grammar",
@@ -143,13 +157,16 @@ def validate(data: Any, task: str) -> list:
     return results
 
 
-def call_provider(text: str, task: str, context: Optional[dict]) -> list:
-    key = os.environ.get("GEMINI_API_KEY")
+def call_provider(text: str, task: str, context: Optional[dict], provider: str) -> list:
+    config = PROVIDERS[provider]
+    key = os.environ.get(config["key_env"])
     if not key:
-        raise ProviderError("missing_api_key", "GEMINI_API_KEY is not configured.")
+        raise ProviderError(
+            "missing_api_key", f"{config['key_env']} is not configured."
+        )
 
     body = {
-        "model": GEMINI_MODEL,
+        "model": config["model"],
         "messages": [
             {"role": "system", "content": build_system_prompt(task)},
             {"role": "user", "content": json.dumps({"text": text, "context": context})},
@@ -163,7 +180,7 @@ def call_provider(text: str, task: str, context: Optional[dict]) -> list:
     }
 
     try:
-        response = requests.post(GEMINI_ENDPOINT, headers=headers, json=body, timeout=120)
+        response = requests.post(config["endpoint"], headers=headers, json=body, timeout=120)
     except requests.RequestException:
         raise ProviderError("provider_error", "Unable to reach the AI provider.")
 
@@ -198,6 +215,7 @@ class Context(BaseModel):
 class AnalyzeRequest(BaseModel):
     text: str
     task: str
+    provider: Optional[str] = "gemini"
     context: Optional[Context] = None
 
 
@@ -238,11 +256,21 @@ async def analyze(request: AnalyzeRequest):
                 }
             },
         )
+    if request.provider not in PROVIDERS:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "error": {
+                    "code": "invalid_request",
+                    "message": "Unknown provider. Choose one of: gemini, groq.",
+                }
+            },
+        )
 
     context = request.context.model_dump() if request.context else None
     try:
         results = await asyncio.get_event_loop().run_in_executor(
-            None, lambda: call_provider(request.text, request.task, context)
+            None, lambda: call_provider(request.text, request.task, context, request.provider)
         )
     except ProviderError as error:
         status = {
@@ -258,8 +286,8 @@ async def analyze(request: AnalyzeRequest):
         )
 
     return {
-        "provider": "gemini",
-        "model": GEMINI_MODEL,
+        "provider": request.provider,
+        "model": PROVIDERS[request.provider]["model"],
         "task": request.task,
         "results": results,
     }

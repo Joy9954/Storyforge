@@ -3,6 +3,11 @@ import { useState } from 'react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
+const PROVIDERS = [
+  { id: 'gemini', label: 'Gemini', icon: '✨' },
+  { id: 'groq', label: 'Groq', icon: '⚡' },
+] as const;
+
 const TASKS = [
   { id: 'grammar', label: 'Grammar', icon: '✏️' },
   { id: 'proofreading', label: 'Proofreading', icon: '🔍' },
@@ -39,6 +44,7 @@ const SEVERITY_STYLES: Record<Severity, { badgeBg: string; badgeColor: string; b
 export default function Home() {
   const [text, setText] = useState('');
   const [task, setTask] = useState<string>('grammar');
+  const [provider, setProvider] = useState<string>('gemini');
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState('Paste a draft, pick a lens, and analyze.');
   const [results, setResults] = useState<Suggestion[] | null>(null);
@@ -52,10 +58,11 @@ export default function Home() {
     }
     setLoading(true);
     setError('');
-    setStatus(`Analyzing with Gemini (${task})…`);
+    const providerLabel = PROVIDERS.find((p) => p.id === provider)?.label ?? provider;
+    setStatus(`Analyzing with ${providerLabel} (${task})…`);
     setResults(null);
     try {
-      const response = await axios.post(`${API_URL}/api/v1/editor/analyze`, { text, task });
+      const response = await axios.post(`${API_URL}/api/v1/editor/analyze`, { text, task, provider });
       const data = response.data as { results: Suggestion[] };
       setResults(data.results || []);
       const count = (data.results || []).length;
@@ -118,8 +125,9 @@ export default function Home() {
       <header>
         <h1>Storyforge</h1>
         <p className="subtitle">
-          Paste a draft, pick an editorial lens, and get structured, advisory feedback from Gemini.
-          Your manuscript is never rewritten automatically.
+          Paste a draft, pick an editorial lens, and get structured, advisory feedback from
+          your chosen AI provider — Gemini or Groq. Your manuscript is never rewritten
+          automatically.
         </p>
       </header>
 
@@ -130,6 +138,20 @@ export default function Home() {
           placeholder={'She walk into the room and saw John sitting by the window.\n\nPaste your manuscript scene here…'}
           aria-label="Manuscript text"
         />
+        <div className="task-label">AI provider</div>
+        <div className="chips">
+          {PROVIDERS.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              className={`chip ${provider === p.id ? 'active' : ''}`}
+              onClick={() => setProvider(p.id)}
+            >
+              <span style={{ marginRight: 6 }}>{p.icon}</span>
+              {p.label}
+            </button>
+          ))}
+        </div>
         <div className="task-label">Editorial lens</div>
         <div className="chips">
           {TASKS.map((t) => (
