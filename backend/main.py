@@ -26,12 +26,20 @@ PROVIDERS = {
     "gemini": {
         "key_env": "GEMINI_API_KEY",
         "model": "gemini-3.6-flash",
+        "models": ["gemini-3.6-flash", "gemini-3.5-flash-lite"],
         "endpoint": "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
     },
     "groq": {
         "key_env": "GROQ_API_KEY",
         "model": "llama-3.3-70b-versatile",
+        "models": ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"],
         "endpoint": "https://api.groq.com/openai/v1/chat/completions",
+    },
+    "openai": {
+        "key_env": "OPENAI_API_KEY",
+        "model": "gpt-4o-mini",
+        "models": ["gpt-4o-mini", "gpt-4o"],
+        "endpoint": "https://api.openai.com/v1/chat/completions",
     },
 }
 
@@ -157,8 +165,12 @@ def validate(data: Any, task: str) -> list:
     return results
 
 
-def call_provider(text: str, task: str, context: Optional[dict], provider: str) -> list:
+def call_provider(text: str, task: str, context: Optional[dict], provider: str, model: Optional[str] = None) -> list:
     config = PROVIDERS[provider]
+    # Resolve the effective model: honour a requested model that this provider
+    # exposes; otherwise fall back safely to the provider's default.
+    if not model or model not in config.get("models", [config["model"]]):
+        model = config["model"]
     key = os.environ.get(config["key_env"])
     if not key:
         raise ProviderError(
@@ -166,7 +178,7 @@ def call_provider(text: str, task: str, context: Optional[dict], provider: str) 
         )
 
     body = {
-        "model": config["model"],
+        "model": model,
         "messages": [
             {"role": "system", "content": build_system_prompt(task)},
             {"role": "user", "content": json.dumps({"text": text, "context": context})},
@@ -216,6 +228,7 @@ class AnalyzeRequest(BaseModel):
     text: str
     task: str
     provider: Optional[str] = "gemini"
+    model: Optional[str] = None
     context: Optional[Context] = None
 
 
@@ -262,15 +275,22 @@ async def analyze(request: AnalyzeRequest):
             content={
                 "error": {
                     "code": "invalid_request",
-                    "message": "Unknown provider. Choose one of: gemini, groq.",
+                    "message": "Unknown provider. Choose one of: gemini, groq, openai.",
                 }
             },
         )
 
     context = request.context.model_dump() if request.context else None
     try:
+        config = PROVIDERS[request.provider]
+        # Graceful model fallback: an unknown/absent model resolves to the default.
+        selected_model = (
+            request.model
+            if request.model and request.model in config.get("models", [config["model"]])
+            else config["model"]
+        )
         results = await asyncio.get_event_loop().run_in_executor(
-            None, lambda: call_provider(request.text, request.task, context, request.provider)
+            None, lambda: call_provider(request.text, request.task, context, request.provider, selected_model)
         )
     except ProviderError as error:
         status = {
@@ -287,7 +307,7 @@ async def analyze(request: AnalyzeRequest):
 
     return {
         "provider": request.provider,
-        "model": PROVIDERS[request.provider]["model"],
+        "model": selected_model,
         "task": request.task,
         "results": results,
     }

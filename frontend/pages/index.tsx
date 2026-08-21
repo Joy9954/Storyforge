@@ -6,7 +6,15 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const PROVIDERS = [
   { id: 'gemini', label: 'Gemini', icon: '✨' },
   { id: 'groq', label: 'Groq', icon: '⚡' },
+  { id: 'openai', label: 'OpenAI', icon: '🤖' },
 ] as const;
+// Mirrors the backend PROVIDERS[].models so the picker and the API stay in sync.
+const PROVIDER_MODELS: Record<ProviderId, string[]> = {
+  gemini: ['gemini-3.6-flash', 'gemini-3.5-flash-lite'],
+  groq: ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'],
+  openai: ['gpt-4o-mini', 'gpt-4o'],
+};
+type ProviderId = (typeof PROVIDERS)[number]['id'];
 
 const TASKS = [
   { id: 'grammar', label: 'Grammar', icon: '✏️' },
@@ -44,7 +52,8 @@ const SEVERITY_STYLES: Record<Severity, { badgeBg: string; badgeColor: string; b
 export default function Home() {
   const [text, setText] = useState('');
   const [task, setTask] = useState<string>('grammar');
-  const [provider, setProvider] = useState<string>('gemini');
+  const [provider, setProvider] = useState<ProviderId>('gemini');
+  const [model, setModel] = useState<string>(PROVIDER_MODELS.gemini[0]);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState('Paste a draft, pick a lens, and analyze.');
   const [results, setResults] = useState<Suggestion[] | null>(null);
@@ -59,17 +68,22 @@ export default function Home() {
     setLoading(true);
     setError('');
     const providerLabel = PROVIDERS.find((p) => p.id === provider)?.label ?? provider;
-    setStatus(`Analyzing with ${providerLabel} (${task})…`);
+    setStatus(`Analyzing with ${providerLabel} · ${model} (${task})…`);
     setResults(null);
     try {
-      const response = await axios.post(`${API_URL}/api/v1/editor/analyze`, { text, task, provider });
-      const data = response.data as { results: Suggestion[] };
+      const response = await axios.post(
+        `${API_URL}/api/v1/editor/analyze`,
+        { text, task, provider, model },
+        { timeout: 120000 },
+      );
+      const data = response.data as { provider?: string; model?: string; results: Suggestion[] };
       setResults(data.results || []);
       const count = (data.results || []).length;
+      const usedModel = data.model ?? model;
       setStatus(
         count === 0
-          ? 'No issues found — clean writing!'
-          : `${count} ${count === 1 ? 'suggestion' : 'suggestions'} found.`,
+          ? `No issues found from ${providerLabel} (${usedModel}) — clean writing!`
+          : `${count} ${count === 1 ? 'suggestion' : 'suggestions'} found via ${providerLabel} (${usedModel}).`,
       );
     } catch (err) {
       let message = `Could not reach the analysis service at ${API_URL}. Is the backend running?`;
@@ -101,6 +115,8 @@ export default function Home() {
         .chip { border: 1px solid #d8d2c6; background: #fff; color: #4a4a4a; border-radius: 999px; padding: 8px 14px; font-size: 14px; cursor: pointer; transition: all 0.15s ease; }
         .chip:hover { border-color: #8a7f6f; }
         .chip.active { background: #2b2b2b; border-color: #2b2b2b; color: #fff; }
+        .model-select { width: 100%; border: 1px solid #d8d2c6; background: #fff; color: #2b2b2b; border-radius: 10px; padding: 10px 14px; font-size: 14px; font-family: inherit; }
+        .model-select:focus { outline: none; border-color: #8a7f6f; box-shadow: 0 0 0 3px rgba(138,127,111,0.15); }
         .actions { display: flex; align-items: center; gap: 16px; margin-top: 18px; }
         .analyze-btn { background: #b4532a; color: #fff; border: none; border-radius: 10px; padding: 12px 28px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.15s ease; }
         .analyze-btn:hover:not(:disabled) { background: #96421f; }
@@ -126,7 +142,7 @@ export default function Home() {
         <h1>Storyforge</h1>
         <p className="subtitle">
           Paste a draft, pick an editorial lens, and get structured, advisory feedback from
-          your chosen AI provider — Gemini or Groq. Your manuscript is never rewritten
+          your chosen AI provider — Gemini, Groq, or OpenAI. Your manuscript is never rewritten
           automatically.
         </p>
       </header>
@@ -145,13 +161,29 @@ export default function Home() {
               key={p.id}
               type="button"
               className={`chip ${provider === p.id ? 'active' : ''}`}
-              onClick={() => setProvider(p.id)}
+              onClick={() => {
+                setProvider(p.id);
+                setModel(PROVIDER_MODELS[p.id][0]);
+              }}
             >
               <span style={{ marginRight: 6 }}>{p.icon}</span>
               {p.label}
             </button>
           ))}
         </div>
+        <div className="task-label">Model</div>
+        <select
+          className="model-select"
+          value={model}
+          onChange={(e) => setModel(e.target.value)}
+          aria-label="AI model"
+        >
+          {PROVIDER_MODELS[provider].map((m) => (
+            <option key={m} value={m}>
+              {m}
+            </option>
+          ))}
+        </select>
         <div className="task-label">Editorial lens</div>
         <div className="chips">
           {TASKS.map((t) => (
