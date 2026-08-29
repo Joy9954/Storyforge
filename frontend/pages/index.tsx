@@ -44,9 +44,9 @@ interface Suggestion {
 }
 
 const SEVERITY_STYLES: Record<Severity, { badgeBg: string; badgeColor: string; border: string }> = {
-  low: { badgeBg: '#e3fafc', badgeColor: '#0b7285', border: '#c5f6fa' },
-  medium: { badgeBg: '#fff3bf', badgeColor: '#e67700', border: '#ffec99' },
-  high: { badgeBg: '#ffe3e3', badgeColor: '#c92a2a', border: '#ffc9c9' },
+  low: { badgeBg: '#143e42', badgeColor: '#7ce8df', border: '#245b60' },
+  medium: { badgeBg: '#4a3410', badgeColor: '#f5c76a', border: '#6b4d1a' },
+  high: { badgeBg: '#4a1622', badgeColor: '#ff9dab', border: '#6b2432' },
 };
 
 export default function Home() {
@@ -101,41 +101,166 @@ export default function Home() {
     <div className="page">
       <style>{`
         * { box-sizing: border-box; }
-        body { margin: 0; background: #f6f4ef; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #2b2b2b; }
-        .page { max-width: 860px; margin: 0 auto; padding: 48px 24px 80px; }
-        header { text-align: center; margin-bottom: 36px; }
-        h1 { font-family: Georgia, 'Times New Roman', serif; font-size: 40px; font-weight: 700; letter-spacing: -0.5px; margin: 0 0 8px; color: #1c1c1c; }
-        .subtitle { font-size: 16px; color: #6b6b6b; margin: 0; line-height: 1.5; }
-        .card { background: #ffffff; border: 1px solid #e5e0d6; border-radius: 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
-        .editor { padding: 20px; }
-        textarea { width: 100%; min-height: 260px; resize: vertical; border: 1px solid #d8d2c6; border-radius: 10px; padding: 14px 16px; font-size: 15px; line-height: 1.6; font-family: Georgia, 'Times New Roman', serif; color: #2b2b2b; background: #fffdf9; }
-        textarea:focus { outline: none; border-color: #8a7f6f; box-shadow: 0 0 0 3px rgba(138,127,111,0.15); }
-        .task-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #8a7f6f; margin: 18px 0 10px; }
+        body {
+          margin: 0;
+          min-height: 100vh;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+          color: #eae6ff;
+          background:
+            radial-gradient(1100px 760px at 88% -4%, rgba(140,105,255,0.16), transparent 62%),
+            radial-gradient(900px 680px at -8% 108%, rgba(70,84,190,0.26), transparent 62%),
+            radial-gradient(560px 420px at 24% 0%, rgba(250,196,120,0.07), transparent 60%),
+            linear-gradient(162deg, #0b1026 0%, #101636 45%, #1a1f3c 100%);
+          background-attachment: fixed;
+          -webkit-font-smoothing: antialiased;
+        }
+        /* Star field — fixed layer of faint starlight dots. */
+        body::before {
+          content: "";
+          position: fixed;
+          inset: 0;
+          z-index: -1;
+          pointer-events: none;
+          background-image:
+            radial-gradient(1.4px 1.4px at 12% 18%, rgba(255,255,255,0.85), transparent 100%),
+            radial-gradient(1px 1px at 26% 62%, rgba(255,255,255,0.55), transparent 100%),
+            radial-gradient(1.6px 1.6px at 33% 26%, rgba(255,255,255,0.9), transparent 100%),
+            radial-gradient(1px 1px at 46% 82%, rgba(255,255,255,0.5), transparent 100%),
+            radial-gradient(1.2px 1.2px at 54% 12%, rgba(255,255,255,0.7), transparent 100%),
+            radial-gradient(1px 1px at 63% 44%, rgba(255,255,255,0.6), transparent 100%),
+            radial-gradient(1.5px 1.5px at 71% 68%, rgba(255,255,255,0.85), transparent 100%),
+            radial-gradient(1px 1px at 78% 24%, rgba(255,255,255,0.5), transparent 100%),
+            radial-gradient(1.2px 1.2px at 86% 56%, rgba(255,255,255,0.75), transparent 100%),
+            radial-gradient(1px 1px at 93% 14%, rgba(255,255,255,0.6), transparent 100%),
+            radial-gradient(1px 1px at 8% 44%, rgba(255,255,255,0.45), transparent 100%),
+            radial-gradient(1.1px 1.1px at 17% 86%, rgba(255,255,255,0.6), transparent 100%),
+            radial-gradient(1.3px 1.3px at 38% 4%, rgba(255,255,255,0.7), transparent 100%),
+            radial-gradient(1px 1px at 59% 90%, rgba(255,255,255,0.5), transparent 100%),
+            radial-gradient(1.1px 1.1px at 82% 78%, rgba(255,255,255,0.65), transparent 100%),
+            radial-gradient(1.9px 1.9px at 48% 40%, rgba(255,255,255,0.95), transparent 100%),
+            radial-gradient(1px 1px at 90% 4%, rgba(255,255,255,0.6), transparent 100%),
+            radial-gradient(1.2px 1.2px at 30% 94%, rgba(255,255,255,0.55), transparent 100%);
+        }
+        .page { max-width: 860px; margin: 0 auto; padding: 56px 24px 80px; }
+        header { text-align: center; margin-bottom: 40px; }
+        h1 {
+          font-family: Georgia, 'Times New Roman', serif;
+          font-size: 44px;
+          font-weight: 700;
+          letter-spacing: -0.5px;
+          margin: 0 0 8px;
+          color: #f5efe0;
+          text-shadow: 0 0 24px rgba(245,199,106,0.18);
+        }
+        .subtitle { font-size: 16px; color: #b6aed0; margin: 0 auto; line-height: 1.6; max-width: 620px; }
+        .card {
+          background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.10);
+          border-radius: 16px;
+          box-shadow: 0 8px 30px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.06);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+        }
+        .editor { padding: 22px; }
+        textarea {
+          width: 100%;
+          min-height: 260px;
+          resize: vertical;
+          border: 1px solid rgba(255,255,255,0.14);
+          border-radius: 12px;
+          padding: 14px 16px;
+          font-size: 15px;
+          line-height: 1.6;
+          font-family: Georgia, 'Times New Roman', serif;
+          color: #ece7f8;
+          background: rgba(9,12,30,0.6);
+        }
+        textarea::placeholder { color: #6f6a90; }
+        textarea:focus { outline: none; border-color: #f0b429; box-shadow: 0 0 0 3px rgba(240,180,41,0.18); }
+        .task-label { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #8f87b3; margin: 18px 0 10px; }
         .chips { display: flex; flex-wrap: wrap; gap: 8px; }
-        .chip { border: 1px solid #d8d2c6; background: #fff; color: #4a4a4a; border-radius: 999px; padding: 8px 14px; font-size: 14px; cursor: pointer; transition: all 0.15s ease; }
-        .chip:hover { border-color: #8a7f6f; }
-        .chip.active { background: #2b2b2b; border-color: #2b2b2b; color: #fff; }
-        .model-select { width: 100%; border: 1px solid #d8d2c6; background: #fff; color: #2b2b2b; border-radius: 10px; padding: 10px 14px; font-size: 14px; font-family: inherit; }
-        .model-select:focus { outline: none; border-color: #8a7f6f; box-shadow: 0 0 0 3px rgba(138,127,111,0.15); }
-        .actions { display: flex; align-items: center; gap: 16px; margin-top: 18px; }
-        .analyze-btn { background: #b4532a; color: #fff; border: none; border-radius: 10px; padding: 12px 28px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.15s ease; }
-        .analyze-btn:hover:not(:disabled) { background: #96421f; }
-        .analyze-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-        .status { font-size: 13px; color: #8a8a8a; }
-        .error { margin-top: 16px; background: #fff5f5; border: 1px solid #ffc9c9; color: #c92a2a; border-radius: 10px; padding: 12px 16px; font-size: 14px; line-height: 1.5; }
+        .chip {
+          border: 1px solid rgba(255,255,255,0.12);
+          background: rgba(255,255,255,0.05);
+          color: #cfcadf;
+          border-radius: 999px;
+          padding: 8px 14px;
+          font-size: 14px;
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+        .chip:hover { border-color: rgba(245,199,106,0.6); color: #f5efe0; }
+        .chip.active {
+          background: linear-gradient(180deg, #f5c76a, #eaa93d);
+          border-color: #f5c76a;
+          color: #221a06;
+          box-shadow: 0 0 18px rgba(240,180,41,0.35);
+        }
+        .model-select {
+          width: 100%;
+          border: 1px solid rgba(255,255,255,0.14);
+          background: rgba(9,12,30,0.6);
+          color: #ece7f8;
+          border-radius: 12px;
+          padding: 10px 14px;
+          font-size: 14px;
+          font-family: inherit;
+        }
+        .model-select:focus { outline: none; border-color: #f0b429; box-shadow: 0 0 0 3px rgba(240,180,41,0.18); }
+        .actions { display: flex; align-items: center; gap: 16px; margin-top: 20px; flex-wrap: wrap; }
+        .analyze-btn {
+          background: linear-gradient(180deg, #f5c76a, #eaa93d);
+          color: #221a06;
+          border: none;
+          border-radius: 12px;
+          padding: 12px 30px;
+          font-size: 15px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          box-shadow: 0 0 22px rgba(240,180,41,0.28);
+        }
+        .analyze-btn:hover:not(:disabled) { background: linear-gradient(180deg, #ffd98a, #f2b64e); box-shadow: 0 0 30px rgba(240,180,41,0.42); }
+        .analyze-btn:disabled { opacity: 0.55; cursor: not-allowed; box-shadow: none; }
+        .status { font-size: 13px; color: #b6aed0; }
+        .error {
+          margin-top: 16px;
+          background: rgba(199,44,44,0.14);
+          border: 1px solid #b0343f;
+          color: #ffb3b3;
+          border-radius: 12px;
+          padding: 12px 16px;
+          font-size: 14px;
+          line-height: 1.5;
+        }
         .results { margin-top: 28px; }
-        .results-title { font-size: 15px; font-weight: 600; color: #4a4a4a; margin: 0 0 12px; }
+        .results-title { font-size: 15px; font-weight: 600; color: #cfcadf; margin: 0 0 12px; }
         .result { padding: 16px 18px; margin-bottom: 12px; border-left-width: 4px; border-left-style: solid; }
-        .result-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .result-head { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
         .badge { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; padding: 3px 10px; border-radius: 999px; }
-        .issue-title { font-size: 15px; font-weight: 600; margin: 0; }
-        .result-body { font-size: 14px; line-height: 1.55; color: #444; }
+        .issue-title { font-size: 15px; font-weight: 600; margin: 0; color: #f0ebfb; }
+        .result-body { font-size: 14px; line-height: 1.55; color: #c9c3dd; }
         .result-body p { margin: 0 0 8px; }
-        .suggestion { background: #faf8f3; border-radius: 8px; padding: 10px 12px; }
-        .suggestion strong { color: #2b2b2b; }
-        .excerpt { font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace; font-size: 12.5px; background: #2b2b2b; color: #e9e4d8; border-radius: 6px; padding: 8px 10px; display: inline-block; margin-top: 6px; }
-        .empty { color: #6b6b6b; font-size: 14px; padding: 20px; text-align: center; }
-        .footer { text-align: center; margin-top: 48px; font-size: 12px; color: #b0aaa0; }
+        .suggestion {
+          background: rgba(255,255,255,0.05);
+          border: 1px solid rgba(255,255,255,0.08);
+          border-radius: 8px;
+          padding: 10px 12px;
+        }
+        .suggestion strong { color: #f5c76a; }
+        .excerpt {
+          font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+          font-size: 12.5px;
+          background: rgba(8,10,26,0.55);
+          border: 1px solid rgba(255,255,255,0.08);
+          color: #d8d1ec;
+          border-radius: 6px;
+          padding: 8px 10px;
+          display: inline-block;
+          margin-top: 6px;
+        }
+        .empty { color: #b6aed0; font-size: 14px; padding: 20px; text-align: center; }
+        .footer { text-align: center; margin-top: 56px; font-size: 12px; color: #8f87b3; }
       `}</style>
 
       <header>
@@ -218,7 +343,7 @@ export default function Home() {
             results.map((r, idx) => {
               const style = SEVERITY_STYLES[r.severity] || SEVERITY_STYLES.low;
               return (
-                <div key={idx} className="card result" style={{ borderLeftColor: style.badgeBg }}>
+                <div key={idx} className="card result" style={{ borderLeftColor: style.badgeColor }}>
                   <div className="result-head">
                     <span className="badge" style={{ background: style.badgeBg, color: style.badgeColor }}>
                       {r.severity}
